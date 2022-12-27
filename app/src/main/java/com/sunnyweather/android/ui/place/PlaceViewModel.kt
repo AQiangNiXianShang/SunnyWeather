@@ -5,7 +5,6 @@ import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import com.sunnyweather.android.logic.model.Place
 import com.sunnyweather.android.logic.network.Repository
-import retrofit2.http.Query
 
 class PlaceViewModel : ViewModel() {
     private val searchLiveData = MutableLiveData<String>()

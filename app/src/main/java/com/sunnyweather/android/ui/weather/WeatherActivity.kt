@@ -1,12 +1,18 @@
 package com.sunnyweather.android.ui.weather
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import android.view.InputDevice
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.card.MaterialCardView
@@ -15,9 +21,10 @@ import com.sunnyweather.android.logic.model.Weather
 import com.sunnyweather.android.logic.model.getSky
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.concurrent.thread
 
 class WeatherActivity : AppCompatActivity() {
-    private val viewModel by lazy { ViewModelProvider(this)[WeatherViewModel::class.java] }
+    val viewModel by lazy { ViewModelProvider(this)[WeatherViewModel::class.java] }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //融合状态栏
@@ -47,8 +54,46 @@ class WeatherActivity : AppCompatActivity() {
                 Toast.makeText(this, "无法成功获取天气信息", Toast.LENGTH_SHORT).show()
                 result.exceptionOrNull()?.printStackTrace()
             }
+            val swipeRefresh =
+                findViewById(R.id.swipeRefresh) as androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            swipeRefresh.isRefreshing = false
         })
-        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+        val swipeRefresh =
+            findViewById(R.id.swipeRefresh) as androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        swipeRefresh.setColorSchemeResources(com.google.android.material.R.color.design_default_color_primary)
+        refreshWeather()
+        swipeRefresh.setOnRefreshListener {
+            refreshWeather()
+            Toast.makeText(this, "刷新完成", Toast.LENGTH_SHORT).show()
+        }
+//        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+
+        val navButton: Button = findViewById(R.id.navButton)
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawerLayout)
+        navButton.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+        drawerLayout.addDrawerListener(
+            object : DrawerLayout.DrawerListener {
+                override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+                }
+
+                override fun onDrawerStateChanged(newState: Int) {
+                }
+
+                override fun onDrawerOpened(drawerView: View) {
+                }
+
+                override fun onDrawerClosed(drawerView: View) {
+                    val manager =
+                        getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    manager.hideSoftInputFromWindow(
+                        drawerView.windowToken,
+                        InputMethodManager.HIDE_NOT_ALWAYS
+                    )
+                }
+            }
+        )
     }
 
     @SuppressLint("WrongViewCast")
@@ -105,5 +150,12 @@ class WeatherActivity : AppCompatActivity() {
         carWashingText.text = lifeIndex.carWashing[0].desc
         val weatherLayout: ScrollView = findViewById(R.id.weatherLayout)
         weatherLayout.visibility = View.VISIBLE
+    }
+
+    fun refreshWeather() {
+        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+        val swipeRefresh =
+            findViewById(R.id.swipeRefresh) as androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        swipeRefresh.isRefreshing = true
     }
 }
